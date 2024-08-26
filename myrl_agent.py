@@ -11,8 +11,8 @@ agentName = "Junyi_rl_agent"
 # Example of a training specification - in this case it's two sessions,
 # one 100 games against two opponents, value_agent and valueplus_agent,
 # the other 50 games against random_agent and value_agent. 
-training = [ ("value_agent.py", "valueplus_agent.py", 100),
-             ("random_agent.py", "value_agent.py", 50),
+training = [ ("value_agent.py", "valueplus_agent.py", 10000),
+            #  ("random_agent.py", "value_agent.py", 50),
            ]
 
 # Name of the file to save the agent to.  If you want to retrain your agent
@@ -47,6 +47,16 @@ class RajAgent():
 
       self.card_values = card_values
       self.item_values = item_values
+
+      self.T = 0.8 # T > 0. The bigger T is, the more explorative. The smaller T is, the more exploitative
+      self.gamma = 0.8 # 0 < gamma <= 1. The percentage of reward of the next state passes to the current state
+      self.alpha = 0.5 # alpha > 0. The percentage of Q-value of the next state passes to the current state
+
+      self.Q = dict() # Q-table
+
+      # Previous percepts(state) and action(action_index), in the next round, these will be used to set the Q-value of the previous Q(s, a)
+      self.previous_percepts = None
+      self.previous_action_index = None
 
    """ Load and save function for the agent.
       
@@ -86,7 +96,7 @@ class RajAgent():
            You may use it to finalise training
            You may remove this method if you don't need it.
        """
-
+       a = self.Q
        pass
 
    def train_session_start(self):
@@ -114,6 +124,8 @@ class RajAgent():
            You may use it to initialise game-specific training variables 
            You may remove this method if you don't need it.
        """
+       self.previous_percepts = None
+       self.previous_action_index = None
        pass
       
    def train_game_end(self, banks):
@@ -124,6 +136,8 @@ class RajAgent():
             
             You may remove this method if you don't need it.
         """
+        self.previous_percepts = None
+        self.previous_action_index = None
         pass
 
    def AgentFunction(self, percepts):
@@ -156,15 +170,57 @@ class RajAgent():
       bank = percepts[3]
       opponents_cards = percepts[4:]
 
-      # Extract different parts of percepts.
-      bidding_on = percepts[0]
-      items_left = percepts[1]
-      my_cards = percepts[2]
-      bank = percepts[3]
-      opponents_cards = percepts[4:]
+      best_action_index = 0
+      
+      # If no records in Q-table for this state, create an empty record
+      # Q-table key: percepts(state)
+      # Q-table value: actions(index of cards in hand to choose)
+      if percepts not in self.Q:
+          self.Q[percepts] = np.zeros(len(my_cards))
+      
+      # Set the previous Q(s, a)
+      if self.previous_percepts != None:
+          Q_star = self.get_state_reward(self.previous_percepts) + self.gamma * max(self.Q[percepts])
+          previous_Q = self.Q[self.previous_percepts][self.previous_action_index]
+          self.Q[self.previous_percepts][self.previous_action_index] = previous_Q + self.alpha * (Q_star - previous_Q)
 
+      # If it is the terminal state, set Q-values to r
+      is_terminal_state = (len(items_left) == 0)
+      if is_terminal_state:
+          for i in range(len(self.Q[percepts])):
+              self.Q[percepts][i] = self.get_state_reward(percepts)
+      else:
+        # Compute pi, and choose the best action to take
+        p = self.Q[percepts]
+        p = np.exp(p / self.T)
+        p = p / np.sum(p)
+
+        p_addup = np.copy(p)
+        for i in range(1, len(p)):
+            for j in range(0, i):
+                p_addup[i] += p[j]
+        
+        rand_0_to_1 = np.random.random()
+        best_action_index = 0
+        for i in range(len(p_addup)):
+            if p_addup[i] > rand_0_to_1:
+                best_action_index = i
+                break
+
+      
+      self.previous_percepts = percepts
+      self.previous_action_index = best_action_index
+        
       # Currently this agent just bids the first card in its hand - you need to make it smarter!
-      action = my_cards[0]
+      action = my_cards[best_action_index]
 
       # Return the bid
       return action
+   
+   def get_state_reward(self, percepts):
+      items_left = percepts[1]
+      bank = percepts[3]
+      if len(items_left) == 0:
+          return bank
+      else:
+          return 0
