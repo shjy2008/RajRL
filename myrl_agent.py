@@ -5,15 +5,20 @@ __email__ = "<your e-mail>"
 import numpy as np
 import pickle
 import os
+import time
 
 agentName = "Junyi_rl_agent"
 
 # Example of a training specification - in this case it's two sessions,
 # one 100 games against two opponents, value_agent and valueplus_agent,
 # the other 50 games against random_agent and value_agent. 
-training = [ ("value_agent.py", "valueplus_agent.py", 10000),
-            #  ("random_agent.py", "value_agent.py", 50),
+training = [ #("value_agent.py", "valueplus_agent.py", 100000),
+            ("random_agent.py", "random_agent.py", 100000),
+            #  ("my_agent.py", "value_agent.py", 100000),
+            #  ("my_agent.py", "valueplus_agent.py", 100000),
            ]
+# training = [ ("valueplus_agent.py", 100000)
+#            ]
 
 # Name of the file to save the agent to.  If you want to retrain your agent
 # delete that file.
@@ -55,8 +60,15 @@ class RajAgent():
       self.Q = dict() # Q-table
 
       # Previous percepts(state) and action(action_index), in the next round, these will be used to set the Q-value of the previous Q(s, a)
-      self.previous_percepts = None
+      self.previous_state = None
       self.previous_action_index = None
+
+      self.is_training = False
+
+      self.training_start_time = None
+
+      self.action_has_Q_value_count = 0
+      self.action_count = 0
 
    """ Load and save function for the agent.
       
@@ -88,6 +100,8 @@ class RajAgent():
             You may use it to initialise training variables
             You may remove this method if you don't need it.
         """
+        self.is_training = True
+        self.training_start_time = time.time()
         pass
    
    def train_end(self):
@@ -96,7 +110,10 @@ class RajAgent():
            You may use it to finalise training
            You may remove this method if you don't need it.
        """
+       self.is_training = False
        a = self.Q
+       training_time = time.time() - self.training_start_time
+       print(f"Training finished. Training time: {training_time}s")
        pass
 
    def train_session_start(self):
@@ -124,7 +141,7 @@ class RajAgent():
            You may use it to initialise game-specific training variables 
            You may remove this method if you don't need it.
        """
-       self.previous_percepts = None
+       self.previous_state = None
        self.previous_action_index = None
        pass
       
@@ -136,9 +153,12 @@ class RajAgent():
             
             You may remove this method if you don't need it.
         """
-        self.previous_percepts = None
+        self.previous_state = None
         self.previous_action_index = None
-        pass
+        # pass
+
+        self.action_has_Q_value_count = 0
+        self.action_count = 0
 
    def AgentFunction(self, percepts):
       """Returns the bid value of the next bid
@@ -170,57 +190,103 @@ class RajAgent():
       bank = percepts[3]
       opponents_cards = percepts[4:]
 
+      state = (bidding_on, items_left, my_cards, bank)
+
       best_action_index = 0
       
-      # If no records in Q-table for this state, create an empty record
-      # Q-table key: percepts(state)
-      # Q-table value: actions(index of cards in hand to choose)
-      if percepts not in self.Q:
-          self.Q[percepts] = np.zeros(len(my_cards))
-      
-      # Set the previous Q(s, a)
-      if self.previous_percepts != None:
-          Q_star = self.get_state_reward(self.previous_percepts) + self.gamma * max(self.Q[percepts])
-          previous_Q = self.Q[self.previous_percepts][self.previous_action_index]
-          self.Q[self.previous_percepts][self.previous_action_index] = previous_Q + self.alpha * (Q_star - previous_Q)
+      if self.is_training:
+        # If no records in Q-table for this state, create an empty record
+        # Q-table key: state
+        # Q-table value: actions(index of cards in hand to choose)
+        if state not in self.Q:
+            self.Q[state] = np.zeros(len(my_cards))
+        
+        # Set the previous Q(s, a)
+        if self.previous_state != None:
+            Q_star = self.get_state_reward(self.previous_state) + self.gamma * max(self.Q[state])
+            previous_Q = self.Q[self.previous_state][self.previous_action_index]
+            self.Q[self.previous_state][self.previous_action_index] = previous_Q + self.alpha * (Q_star - previous_Q)
 
-      # If it is the terminal state, set Q-values to r
-      is_terminal_state = (len(items_left) == 0)
-      if is_terminal_state:
-          for i in range(len(self.Q[percepts])):
-              self.Q[percepts][i] = self.get_state_reward(percepts)
+        # If it is the terminal state, set Q-values to r
+        is_terminal_state = (len(items_left) == 0)
+        if is_terminal_state:
+            for i in range(len(self.Q[state])):
+                self.Q[state][i] = self.get_state_reward(state)
+        else:
+            # Compute pi, and choose the best action to take
+            p = self.Q[state]
+            p = np.exp(p / self.T)
+            p = p / np.sum(p)
+
+            p_addup = np.copy(p)
+            for i in range(1, len(p)):
+                for j in range(0, i):
+                    p_addup[i] += p[j]
+            
+            rand_0_to_1 = np.random.random()
+            best_action_index = 0
+            for i in range(len(p_addup)):
+                if p_addup[i] > rand_0_to_1:
+                    best_action_index = i
+                    break
+        
+        self.previous_state = state
+        self.previous_action_index = best_action_index
+    
       else:
-        # Compute pi, and choose the best action to take
-        p = self.Q[percepts]
-        p = np.exp(p / self.T)
-        p = p / np.sum(p)
+          if (state in self.Q):
+              best_action_index = np.argmax(self.Q[state])
+              self.action_has_Q_value_count += 1
+          else:
+              best_action_index = np.random.randint(0, len(my_cards))
+          self.action_count += 1
 
-        p_addup = np.copy(p)
-        for i in range(1, len(p)):
-            for j in range(0, i):
-                p_addup[i] += p[j]
-        
-        rand_0_to_1 = np.random.random()
-        best_action_index = 0
-        for i in range(len(p_addup)):
-            if p_addup[i] > rand_0_to_1:
-                best_action_index = i
-                break
+      if self.action_count > 0 and self.action_count % 1000 == 0:
+        print(f"Action has Q value rate: {self.action_has_Q_value_count} / {self.action_count} = {self.action_has_Q_value_count / self.action_count}")
 
-      
-      self.previous_percepts = percepts
-      self.previous_action_index = best_action_index
-        
-      # Currently this agent just bids the first card in its hand - you need to make it smarter!
       action = my_cards[best_action_index]
 
       # Return the bid
       return action
    
-   def get_state_reward(self, percepts):
-      items_left = percepts[1]
-      bank = percepts[3]
+   def get_state_reward(self, state):
+      items_left = state[1]
+      bank = state[3]
       if len(items_left) == 0:
           return bank
       else:
           return 0
+    # return self.get_evaluation_value(percepts)
+      
+# Evaluation function: value is calculated according to the bank and cards of both sides
+#    def get_evaluation_value(self, percepts):
+#       bidding_on = percepts[0]
+#       items_left = percepts[1]
+#       my_cards = percepts[2]
+#       bank = percepts[3]
+#       opponents_cards = percepts[4:][0]
+
+#       # Compare cards one by one by positions after sorting
+#       # For each position, if my card is greater than the opponent's, score += 1, if less than the opponent's, score -= 1
+#       my_cards_sorted = list(my_cards[:])
+#       my_cards_sorted.sort()
+#       opponents_cards_sorted = sorted(opponents_cards)
+#       card_value_compare_score = 0
+#       for i in range(len(my_cards_sorted)):
+#           if my_cards_sorted[i] > opponents_cards_sorted[i]:
+#               card_value_compare_score += 1
+#           elif my_cards_sorted[i] < opponents_cards_sorted[i]:
+#               card_value_compare_score -= 1
+    
+#       # Multiply compare score with the average value of the items left
+#       items_left_abs = [abs(card) for card in items_left]
+#       items_left_abs.append(bidding_on)
+#       items_left_abs_average = sum(items_left_abs) / len(items_left_abs)
+#       potential_value = items_left_abs_average * card_value_compare_score
+
+#       # Calculate bank difference score
+#       bank_diff = bank# - opponents_bank
+
+#       # Score is calculated by 
+#       total_score = potential_value + bank_diff * 1.2
+#       return total_score

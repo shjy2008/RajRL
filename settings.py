@@ -6,7 +6,8 @@ __email__ = "lech.szymanski@otago.ac.nz"
 
 game_settings = {
 
-   "agentFiles": ("myrl_agent.py", "value_agent.py", "valueplus_agent.py"), # agent files that play the game,
+   "agentFiles": #("myrl_agent.py", "valueplus_agent.py", "value_agent.py"), # agent files that play the game,
+                  ("myrl_agent.py", "random_agent.py", "random_agent.py"),
                                                         # (replace human_agent with my_agent.py when 
                                                         # your agent is ready)
 
@@ -14,11 +15,11 @@ game_settings = {
 
    "itemValues": (-2,-1,1,2,3,4), # values of the items to bid on (must be same length as cardValues)
 
-   "totalNumberOfGames": 5,    # total number of games played
+   "totalNumberOfGames": 1000,    # total number of games played
 
    "verbose": True,
 
-   "seed": 0,                     # seed for random choices of bids in the game, None for random seed
+   "seed": 2,                     # seed for random choices of bids in the game, None for random seed
 
 }
 
