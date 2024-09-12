@@ -13,9 +13,11 @@ agentName = "Junyi_rl_agent"
 # one 100 games against two opponents, value_agent and valueplus_agent,
 # the other 50 games against random_agent and value_agent. 
 training = [ #("value_agent.py", "valueplus_agent.py", 100000),
-            ("random_agent.py", "random_agent.py", 100000),
-            #  ("my_agent.py", "value_agent.py", 100000),
-            #  ("my_agent.py", "valueplus_agent.py", 100000),
+              ("random_agent.py", "random_agent.py", 10000),
+            #("random_agent.py", "value_agent.py", 4000),
+            #("random_agent.py", "valueplus_agent.py", 4000),
+            #  ("my_agent.py", "value_agent.py", 5000),
+            #  ("my_agent.py", "valueplus_agent.py", 5000),
            ]
 # training = [ ("valueplus_agent.py", 100000)
 #            ]
@@ -53,15 +55,17 @@ class RajAgent():
       self.card_values = card_values
       self.item_values = item_values
 
-      self.T = 0.8 # T > 0. The bigger T is, the more explorative. The smaller T is, the more exploitative
+      self.T = 0.6 # T > 0. The bigger T is, the more explorative. The smaller T is, the more exploitative
       self.gamma = 0.8 # 0 < gamma <= 1. The percentage of reward of the next state passes to the current state
       self.alpha = 0.5 # alpha > 0. The percentage of Q-value of the next state passes to the current state
 
       self.Q = dict() # Q-table
 
       # Previous percepts(state) and action(action_index), in the next round, these will be used to set the Q-value of the previous Q(s, a)
+      self.previous_percepts = None
       self.previous_state = None
       self.previous_action_index = None
+      self.banks = None
 
       self.is_training = False
 
@@ -102,7 +106,6 @@ class RajAgent():
         """
         self.is_training = True
         self.training_start_time = time.time()
-        pass
    
    def train_end(self):
        """ Invoked once by the engine at the start of the training.
@@ -111,10 +114,8 @@ class RajAgent():
            You may remove this method if you don't need it.
        """
        self.is_training = False
-       a = self.Q
        training_time = time.time() - self.training_start_time
        print(f"Training finished. Training time: {training_time}s")
-       pass
 
    def train_session_start(self):
        """ Invoked by the engine at the start of the training session
@@ -141,9 +142,11 @@ class RajAgent():
            You may use it to initialise game-specific training variables 
            You may remove this method if you don't need it.
        """
+       self.previous_percepts = None
        self.previous_state = None
        self.previous_action_index = None
-       pass
+       self.banks = None
+       
       
    def train_game_end(self, banks):
         """ Invoked by the engine at the end of each game training,
@@ -153,9 +156,15 @@ class RajAgent():
             
             You may remove this method if you don't need it.
         """
+
+        state = self.previous_state
+        for i in range(len(self.Q[state])):
+            self.Q[state][i] = self.get_state_reward_end(state, banks) #banks[0] * 2 - banks[1] - banks[2] #self.get_state_reward(state)
+
+        self.previous_percepts = None
         self.previous_state = None
         self.previous_action_index = None
-        # pass
+        self.banks = None
 
         self.action_has_Q_value_count = 0
         self.action_count = 0
@@ -190,6 +199,8 @@ class RajAgent():
       bank = percepts[3]
       opponents_cards = percepts[4:]
 
+      self.update_banks(my_cards, opponents_cards)
+
       state = (bidding_on, items_left, my_cards, bank)
 
       best_action_index = 0
@@ -203,17 +214,20 @@ class RajAgent():
         
         # Set the previous Q(s, a)
         if self.previous_state != None:
-            Q_star = self.get_state_reward(self.previous_state) + self.gamma * max(self.Q[state])
+            # Q_star = self.get_state_reward(self.previous_state) + self.gamma * max(self.Q[state])
+            previous_state_reward = self.get_state_reward(self.previous_state, self.banks) #self.previous_state[3] # 
+            Q_star = previous_state_reward + self.gamma * max(self.Q[state])
             previous_Q = self.Q[self.previous_state][self.previous_action_index]
             self.Q[self.previous_state][self.previous_action_index] = previous_Q + self.alpha * (Q_star - previous_Q)
 
         # If it is the terminal state, set Q-values to r
         is_terminal_state = (len(items_left) == 0)
         if is_terminal_state:
-            for i in range(len(self.Q[state])):
-                self.Q[state][i] = self.get_state_reward(state)
+            pass
+            # for i in range(len(self.Q[state])):
+            #     self.Q[state][i] = self.get_state_reward(state)
         else:
-            # Compute pi, and choose the best action to take
+            # Compute pi(softmax function), and choose the best action to take
             p = self.Q[state]
             p = np.exp(p / self.T)
             p = p / np.sum(p)
@@ -229,11 +243,7 @@ class RajAgent():
                 if p_addup[i] > rand_0_to_1:
                     best_action_index = i
                     break
-        
-        self.previous_state = state
-        self.previous_action_index = best_action_index
-    
-      else:
+      else: # Not training
           if (state in self.Q):
               best_action_index = np.argmax(self.Q[state])
               self.action_has_Q_value_count += 1
@@ -241,6 +251,11 @@ class RajAgent():
               best_action_index = np.random.randint(0, len(my_cards))
           self.action_count += 1
 
+      self.previous_percepts = percepts
+      self.previous_state = state
+      self.previous_action_index = best_action_index
+      
+    
       if self.action_count > 0 and self.action_count % 1000 == 0:
         print(f"Action has Q value rate: {self.action_has_Q_value_count} / {self.action_count} = {self.action_has_Q_value_count / self.action_count}")
 
@@ -249,14 +264,56 @@ class RajAgent():
       # Return the bid
       return action
    
-   def get_state_reward(self, state):
-      items_left = state[1]
-      bank = state[3]
-      if len(items_left) == 0:
-          return bank
+   def get_state_reward(self, state, banks):
+      score = banks[0] * (len(banks) - 1)
+      for opponent_bank in banks[1:]:
+          score -= opponent_bank
+      score = score / 10
+      return score
+
+   def get_state_reward_end(self, state, banks):
+      score = banks[0] * (len(banks) - 1)
+      for opponent_bank in banks[1:]:
+          score -= opponent_bank
+      return score
+
+   # Get the previous bid by comparing the cards in hand
+   def get_previous_bid(self, previous_cards, curr_cards):
+       return next(iter(set(previous_cards) - set(curr_cards)))
+   
+   # Calculate self.banks, the first one is my bank, and the others are opponents' banks
+   def update_banks(self, my_cards, opponents_cards):
+      if self.previous_percepts != None and len(my_cards) >= len(self.previous_percepts[2]): # It's new round
+          self.banks = None
+      if self.banks == None:
+         self.banks = [0] * (len(opponents_cards) + 1) #np.zeros((len(opponents_cards)) + 1)
       else:
-          return 0
-    # return self.get_evaluation_value(percepts)
+         my_previous_bid = self.get_previous_bid(self.previous_percepts[2], my_cards)
+
+         bids = np.array([my_previous_bid])
+         for i in range(len(opponents_cards)):
+             opponent_previous_bid = self.get_previous_bid(self.previous_percepts[4:][i], opponents_cards[i])
+             bids = np.append(bids, opponent_previous_bid)
+         item_value = self.previous_percepts[0]
+
+         # Only unique bids count
+         unique_bids ,counts = np.unique(bids,return_counts=True)
+         I = np.where(counts==1)[0]
+
+         if len(I) == 0:
+             pass
+         else:
+            Is = unique_bids[I]
+            if item_value >= 0:
+               winning_bid = Is[-1]
+            else:
+               winning_bid = Is[0]
+
+            p = np.where(bids==winning_bid)[0][0]
+
+            self.banks[p] += item_value
+       
+       
       
 # Evaluation function: value is calculated according to the bank and cards of both sides
 #    def get_evaluation_value(self, percepts):
