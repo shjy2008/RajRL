@@ -266,15 +266,18 @@ class RajAgent():
       items_left = state[1]
       is_terminal = (len(items_left) == 0)
 
-      score = banks[0] * (len(banks) - 1)
+      bank_score = banks[0] * (len(banks) - 1)
       for opponent_bank in banks[1:]:
-          score -= opponent_bank
+          bank_score -= opponent_bank
 
       if not is_terminal:
         my_cards = state[2]
         avg_init_hand_card_value = sum(self.initial_cards) / len(self.initial_cards)
         avg_hand_card_value = sum(my_cards) / len(my_cards)
-        score = ((avg_hand_card_value - avg_init_hand_card_value) * len(my_cards) + score) / 10
+        card_score = (avg_hand_card_value - avg_init_hand_card_value) * len(my_cards)
+        score = (card_score + bank_score) / 10
+      else:
+        score = bank_score
 
       return score
 
