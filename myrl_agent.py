@@ -12,12 +12,12 @@ agentName = "Junyi_rl_agent"
 # Example of a training specification - in this case it's two sessions,
 # one 100 games against two opponents, value_agent and valueplus_agent,
 # the other 50 games against random_agent and value_agent. 
-training = [ #("value_agent.py", "valueplus_agent.py", 100000),
-              ("random_agent.py", "random_agent.py", 10000),
-            #("random_agent.py", "value_agent.py", 4000),
-            #("random_agent.py", "valueplus_agent.py", 4000),
-            #  ("my_agent.py", "value_agent.py", 5000),
-            #  ("my_agent.py", "valueplus_agent.py", 5000),
+training = [ ("value_agent.py", "valueplus_agent.py", 20000),
+               ("random_agent.py", "random_agent.py", 20000),
+            #("random_agent.py", "value_agent.py", 2500),
+            #("random_agent.py", "valueplus_agent.py", 2500),
+            #("my_agent.py", "value_agent.py", 2500),
+            #("my_agent.py", "valueplus_agent.py", 2500),
            ]
 # training = [ ("valueplus_agent.py", 100000)
 #            ]
@@ -55,9 +55,9 @@ class RajAgent():
       self.card_values = card_values
       self.item_values = item_values
 
-      self.T = 0.6 # T > 0. The bigger T is, the more explorative. The smaller T is, the more exploitative
-      self.gamma = 0.8 # 0 < gamma <= 1. The percentage of reward of the next state passes to the current state
-      self.alpha = 0.5 # alpha > 0. The percentage of Q-value of the next state passes to the current state
+      self.T = 1.0 # T > 0. (How explorative) The bigger T is, the more explorative. The smaller T is, the more exploitative
+      self.gamma = 0.8 # 0 < gamma <= 1. (Future discount) The percentage of reward of the next state passes to the current state
+      self.alpha = 0.3 # alpha > 0. (Learning speed) The percentage of Q-value of the next state passes to the current state
 
       self.Q = dict() # Q-table
 
@@ -66,6 +66,7 @@ class RajAgent():
       self.previous_state = None
       self.previous_action_index = None
       self.banks = None
+      self.initial_cards = None
 
       self.is_training = False
 
@@ -159,7 +160,7 @@ class RajAgent():
 
         state = self.previous_state
         for i in range(len(self.Q[state])):
-            self.Q[state][i] = self.get_state_reward_end(state, banks) #banks[0] * 2 - banks[1] - banks[2] #self.get_state_reward(state)
+            self.Q[state][i] = self.get_state_reward(state, banks) #banks[0] * 2 - banks[1] - banks[2] #self.get_state_reward(state)
 
         self.previous_percepts = None
         self.previous_state = None
@@ -211,6 +212,9 @@ class RajAgent():
         # Q-table value: actions(index of cards in hand to choose)
         if state not in self.Q:
             self.Q[state] = np.zeros(len(my_cards))
+
+        if self.previous_state == None:
+            self.initial_cards = my_cards
         
         # Set the previous Q(s, a)
         if self.previous_state != None:
@@ -265,16 +269,19 @@ class RajAgent():
       return action
    
    def get_state_reward(self, state, banks):
-      score = banks[0] * (len(banks) - 1)
-      for opponent_bank in banks[1:]:
-          score -= opponent_bank
-      score = score / 10
-      return score
+      items_left = state[1]
+      is_terminal = (len(items_left) == 0)
 
-   def get_state_reward_end(self, state, banks):
       score = banks[0] * (len(banks) - 1)
       for opponent_bank in banks[1:]:
           score -= opponent_bank
+
+      if not is_terminal:
+        my_cards = state[2]
+        avg_init_hand_card_value = sum(self.initial_cards) / len(self.initial_cards)
+        avg_hand_card_value = sum(my_cards) / len(my_cards)
+        score = ((avg_hand_card_value - avg_init_hand_card_value) * len(my_cards) + score) / 10
+
       return score
 
    # Get the previous bid by comparing the cards in hand
