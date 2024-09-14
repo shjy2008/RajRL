@@ -12,8 +12,8 @@ agentName = "Junyi_rl_agent"
 # Example of a training specification - in this case it's two sessions,
 # one 100 games against two opponents, value_agent and valueplus_agent,
 # the other 50 games against random_agent and value_agent. 
-training = [ ("value_agent.py", "valueplus_agent.py", 20000),
-               ("random_agent.py", "random_agent.py", 20000),
+training = [ ("value_agent.py", "valueplus_agent.py", 50000),
+               ("random_agent.py", "random_agent.py", 50000),
             #("random_agent.py", "value_agent.py", 2500),
             #("random_agent.py", "valueplus_agent.py", 2500),
             #("my_agent.py", "value_agent.py", 2500),
@@ -55,9 +55,9 @@ class RajAgent():
       self.card_values = card_values
       self.item_values = item_values
 
-      self.T = 1.0 # T > 0. (How explorative) The bigger T is, the more explorative. The smaller T is, the more exploitative
+      self.T = 0.6 # T > 0. (How explorative) The bigger T is, the more explorative. The smaller T is, the more exploitative
       self.gamma = 0.8 # 0 < gamma <= 1. (Future discount) The percentage of reward of the next state passes to the current state
-      self.alpha = 0.3 # alpha > 0. (Learning speed) The percentage of Q-value of the next state passes to the current state
+      self.alpha = 0.5 # alpha > 0. (Learning speed) The percentage of Q-value of the next state passes to the current state
 
       self.Q = dict() # Q-table
 
@@ -202,7 +202,7 @@ class RajAgent():
 
       self.update_banks(my_cards, opponents_cards)
 
-      state = (bidding_on, items_left, my_cards, bank)
+      state = (bidding_on, items_left, my_cards)
 
       best_action_index = 0
       
@@ -218,20 +218,14 @@ class RajAgent():
         
         # Set the previous Q(s, a)
         if self.previous_state != None:
-            # Q_star = self.get_state_reward(self.previous_state) + self.gamma * max(self.Q[state])
-            previous_state_reward = self.get_state_reward(self.previous_state, self.banks) #self.previous_state[3] # 
+            previous_state_reward = self.get_state_reward(self.previous_state, self.banks)
             Q_star = previous_state_reward + self.gamma * max(self.Q[state])
             previous_Q = self.Q[self.previous_state][self.previous_action_index]
             self.Q[self.previous_state][self.previous_action_index] = previous_Q + self.alpha * (Q_star - previous_Q)
 
-        # If it is the terminal state, set Q-values to r
         is_terminal_state = (len(items_left) == 0)
-        if is_terminal_state:
-            pass
-            # for i in range(len(self.Q[state])):
-            #     self.Q[state][i] = self.get_state_reward(state)
-        else:
-            # Compute pi(softmax function), and choose the best action to take
+        if not is_terminal_state:
+            # Compute pi(softmax function), and choose an action to take based on probability
             p = self.Q[state]
             p = np.exp(p / self.T)
             p = p / np.sum(p)
@@ -260,8 +254,8 @@ class RajAgent():
       self.previous_action_index = best_action_index
       
     
-      if self.action_count > 0 and self.action_count % 1000 == 0:
-        print(f"Action has Q value rate: {self.action_has_Q_value_count} / {self.action_count} = {self.action_has_Q_value_count / self.action_count}")
+    #   if self.action_count > 0 and self.action_count % 1000 == 0:
+    #     print(f"Action has Q value rate: {self.action_has_Q_value_count} / {self.action_count} = {self.action_has_Q_value_count / self.action_count}")
 
       action = my_cards[best_action_index]
 
@@ -319,38 +313,3 @@ class RajAgent():
             p = np.where(bids==winning_bid)[0][0]
 
             self.banks[p] += item_value
-       
-       
-      
-# Evaluation function: value is calculated according to the bank and cards of both sides
-#    def get_evaluation_value(self, percepts):
-#       bidding_on = percepts[0]
-#       items_left = percepts[1]
-#       my_cards = percepts[2]
-#       bank = percepts[3]
-#       opponents_cards = percepts[4:][0]
-
-#       # Compare cards one by one by positions after sorting
-#       # For each position, if my card is greater than the opponent's, score += 1, if less than the opponent's, score -= 1
-#       my_cards_sorted = list(my_cards[:])
-#       my_cards_sorted.sort()
-#       opponents_cards_sorted = sorted(opponents_cards)
-#       card_value_compare_score = 0
-#       for i in range(len(my_cards_sorted)):
-#           if my_cards_sorted[i] > opponents_cards_sorted[i]:
-#               card_value_compare_score += 1
-#           elif my_cards_sorted[i] < opponents_cards_sorted[i]:
-#               card_value_compare_score -= 1
-    
-#       # Multiply compare score with the average value of the items left
-#       items_left_abs = [abs(card) for card in items_left]
-#       items_left_abs.append(bidding_on)
-#       items_left_abs_average = sum(items_left_abs) / len(items_left_abs)
-#       potential_value = items_left_abs_average * card_value_compare_score
-
-#       # Calculate bank difference score
-#       bank_diff = bank# - opponents_bank
-
-#       # Score is calculated by 
-#       total_score = potential_value + bank_diff * 1.2
-#       return total_score
