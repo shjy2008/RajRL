@@ -1,0 +1,174 @@
+Assignment 2
+# Student: sheju347
+
+ 
+
+## Marks
+
+ 
+
+| Task | Mark | Out Of |
+
+| ------- | ---: | :--- |
+
+| Implementation    | 9 | / 10 |
+
+| Report            | 11 | / 10 |
+
+| Total             | 20 | / 20 |
+
+ 
+
+## Trial Results
+
+ 
+
+The following is a table of all of your results. It may not render correctly on smaller devices thanks to line wrapping. View this file on a wider screen (or copy and paste to an app that supports no-line-wrapping to view it in full).
+
+ 
+
+  TestID    Num. Games  Card Values           Item Values             Opponents               Mean Score    Standard Deviation    Best Score    Worst Score
+
+--------  ------------  --------------------  ----------------------  --------------------  ------------  --------------------  ------------  -------------
+
+       1           100  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Random, Random                1.75                  0.26          2.01           1.49
+
+       2          1000  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Random, Random                1.92                  0.01          1.94           1.91
+
+       3           100  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Random, Value                 1.88                  0             1.88           1.87
+
+       4          1000  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Random, Value                 1.73                  0.03          1.76           1.71
+
+       5           100  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Random, ValuePlus             1.76                  0.51          2.27           1.25
+
+       6          1000  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Random, ValuePlus             1.66                  0.26          1.92           1.4
+
+       7           100  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    ValuePlus, ValuePlus          6.61                  0.06          6.66           6.55
+
+       8          1000  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    ValuePlus, ValuePlus          6.58                  0.01          6.59           6.57
+
+       9           100  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Value, ValuePlus              3.59                  0.49          4.09           3.1
+
+      10          1000  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Value, ValuePlus              3.52                  0.09          3.61           3.43
+
+      11           100  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Value, Value                  6.5                   0.08          6.58           6.42
+
+      12          1000  (1, 2, 3, 4, 5, 6)    (-2, -1, 1, 2, 3, 4)    Value, Value                  6.61                  0.02          6.63           6.59
+
+      13           100  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Random, Random               -0.3                   0.98          0.69          -1.28
+
+      14          1000  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Random, Random               -0.22                  0.07         -0.15          -0.3
+
+      15           100  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Random, Value                -7.36                  0.41         -6.95          -7.77
+
+      16          1000  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Random, Value                -6.25                  0.36         -5.89          -6.61
+
+      17           100  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Random, ValuePlus            -6.17                  0.17         -6.01          -6.34
+
+      18          1000  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Random, ValuePlus            -6.25                  0.06         -6.19          -6.32
+
+      19           100  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  ValuePlus, ValuePlus         14.71                  0.05         14.76          14.65
+
+      20          1000  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  ValuePlus, ValuePlus         14.22                  0.12         14.33          14.1
+
+      21           100  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Value, ValuePlus             14.28                  0.2          14.48          14.08
+
+      22          1000  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Value, ValuePlus             14.61                  0.01         14.62          14.61
+
+      23           100  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Value, Value                 14.74                  0.25         14.99          14.49
+
+      24          1000  (1, 2, 4, 8, 10, 12)  (-8, -2, 4, 16, 8, -3)  Value, Value                 14.48                  0.04         14.51          14.44
+
+ 
+
+## Comments
+
+ 
+
+We have tested your submitted agents in a variety of games of Raj to verify the performance of your agents. Each game setting was repeated between one hundred and several thousand times. Each combination of opponent agents (from Random, Value, and ValuePlus) was tested, although the most important of these is Random/Random (as per the assignment specification). We calculated the scores mentioned below as the score achieved by your agent (the bank at the end of a game) subtract the best opponent score.
+
+ 
+
+Your agent (on average) beat the random agent when using the default game settings (Card Values of (1, 2, 3, 4, 5, 6) and item values of (-2, -1, 1, 2, 3, 4), and 1000 games). Your agent achieved an average score of 1.92 with a standard deviation of 0.01.
+
+ 
+
+Your agent consistently beat the random agents, with a worst score of 1.91. Excellent work!
+
+ 
+
+Your agent did not (on average) beat the random agent using slightly different game settings (Card Values of (1, 2, 4, 8, 10, 12) and item values of (-8, -2, 4, 16, 8, -3), and 1000 games). Your mean score was -0.22 with standard deviation 0.07. Your agent (and reinforcement learning in general) should be capable of adapting to different environments, which corresponds to the game settings in the case of Raj, so we should see your agent beat the random agents even if it was optimized for the default game settings (assuming your agent is retrained, of course!!)
+
+ 
+
+As a matter of fact, your agent did not ever beat the random agents on these updated settings. Your agents best score against the random agents on these updated settings was -0.15
+
+ 
+
+Looking now at the default game settings (Card Values of (1, 2, 3, 4, 5, 6) and item values of (-2, -1, 1, 2, 3, 4)) and only games involving Value or ValuePlus agents (since the random agent is difficult to train against!), it seems that your agent performs very well!! The worst mean score amongst these games your agent achieved was 3.52, with average mean score of 5.568. Perhaps your agent was optimized for these games somewhat, but considering the assignment specification was particularly geared towards the random agent it is good to see your methods generalize to other settings, as we may expect from reinforcement learning.
+
+ 
+
+Moving to the updated game settings (Card Values of (1, 2, 4, 8, 10, 12) and item values of (-8, -2, 4, 16, 8, -3)) and only games involving Value or ValuePlus agents, your agent has a good match up. The worst mean score amongst these games your agent achieved was 14.22, with average mean score of 14.507. This indicates your agent defeats the non-random agents consistently in the non-default game settings, showing some decent generalization to your methods and learned strategies. Good work!
+
+ 
+
+In our experiments, your agent ran very quickly --- never taking more than one second (up to a one second resolution in the testing script). Excellent work! This is (somewhat) typical when the operations in a simple reinforcement learning agent are not required to be all that complex.
+
+ 
+
+### Implementation
+
+ 
+
+Interesting training strategy! Did you choose these particular combinations of agents for a reason? The assignment specification only mentions the random agent (although, generalization to other agents is never a bad thing!) so a naive solution would be to train only on the random agents, no? I am not saying that is the *optimal* strategy, but I would be interested to know your thoughts on why your strategy is best, and how you justify it!! Did you test other strategies, do you have some intuition on the transfer of skills between agents, do you find that altering the training prevents the agent from getting too comfortable? I look forward to this in your report!
+
+ 
+
+You have set your hyperparameters for temporal difference learning, which is good to see, but as discussed in the lab I would like to see *why* you chose these exact values. I look forward to the report!
+
+ 
+
+Nice reward function! I would like to see some discussion as to why you chose this reward function over any others --- did you try something with greater or lesser complexity? Did this specific formulation perform the best? Show me some data to convince me you have explored the space beyond the first thing that worked!!
+
+ 
+
+For a piece of submitted code that is intended to be clean and concise, you likely do not need the print statements (e.g. line 117).
+
+ 
+
+This seems like a reasonable implementation of temporal difference learning for a reinforcement learning task. 
+
+ 
+
+Fairly clean code and well documented throughout (in addition to the template docstrings Lech provides, of course!)
+
+ 
+
+### Report
+
+ 
+
+This report is perhaps a little long, but that's not always a bad thing! Personally, I am terrible for writing far too verbosely, but at least there is a point or two in the manuscript... somewhere... I hope your report is the same! However, ensure that you are not being verbose for verbosity's sake!
+
+ 
+
+Good introduction to the Raj context and assignment specification.
+
+ 
+
+Nice explanation of your chosen state, perhaps you could go a little more indepth as to why we want to have a state that is not represented by every percept available? Naively this would give us the most informed Q-learning agent but in practice this does not correspond to increased performance in every case... but I want you to explain this to show your understanding!
+
+    Ah, I see! I just had to scroll to page two to find these results... excellent work! I am very happy to see this :)
+
+ 
+
+And even more exploration across different reward functions! Great work, I could not be happier with this exploration.
+
+ 
+
+Nice comparison of reinforcement learning and the minimax agent!
+
+ 
+
+Goodness me!!! I am spoiled for experiments and data here. If I could award bonus points, I would. In fact, I will make up the point off your implementation. Great work here!
